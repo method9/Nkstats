@@ -103,8 +103,8 @@
           const getRadarData = (category) => {
             return PLAYER_ATTRIBUTES[category].map(attr => {
               const data = { attribute: attr };
-              players[activePlayer].evaluations.forEach((eval, index) => {
-                data[`evaluation${index}`] = eval.stats[attr] || 0;
+              players[activePlayer].evaluations.forEach((evaluation, index) => {
+                data[`evaluation${index}`] = evaluation.stats[attr] || 0;
               });
               return data;
             });
@@ -113,8 +113,8 @@
           const getGlobalRadarData = () => {
             return Object.keys(PLAYER_ATTRIBUTES).map(category => {
               const data = { attribute: category };
-              players[activePlayer].evaluations.forEach((eval, index) => {
-                data[`evaluation${index}`] = PLAYER_ATTRIBUTES[category].reduce((sum, attr) => sum + (eval.stats[attr] || 0), 0) / PLAYER_ATTRIBUTES[category].length;
+              players[activePlayer].evaluations.forEach((evaluation, index) => {
+                data[`evaluation${index}`] = PLAYER_ATTRIBUTES[category].reduce((sum, attr) => sum + (evaluation.stats[attr] || 0), 0) / PLAYER_ATTRIBUTES[category].length;
               });
               return data;
             });
