@@ -11,6 +11,14 @@
 </head>
 <body>
     <div id="root"></div>
-    <script type="text/babel" src="index.js"></script>
+    <script type="text/babel">
+        // Tout le code JavaScript sera ici
+        const { useState, useEffect } = React;
+        const { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip, Legend } = Recharts;
+
+        // ... (Copiez ici tout le contenu du fichier index.js, à partir de la définition de PLAYER_ATTRIBUTES jusqu'à la fin)
+
+        ReactDOM.render(<GraphiqueRadarFootball />, document.getElementById('root'));
+    </script>
 </body>
 </html>
