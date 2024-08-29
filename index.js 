@@ -1,5 +1,9 @@
+console.log('Début du chargement du script');
+
 const { useState, useEffect } = React;
 const { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip, Legend } = Recharts;
+
+console.log('Dépendances React et Recharts chargées');
 
 const PLAYER_ATTRIBUTES = {
   "Compétences Techniques": [
@@ -35,7 +39,10 @@ const EVALUATION_COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#a4de6c", "#d0ed57"
 const FLAT_ATTRIBUTES = Object.values(PLAYER_ATTRIBUTES).flat();
 const initialStats = FLAT_ATTRIBUTES.reduce((acc, attr) => ({ ...acc, [attr]: 50 }), {});
 
+console.log('Constantes définies');
+
 const GraphiqueRadarFootball = () => {
+  console.log('Rendu du composant GraphiqueRadarFootball');
   const [players, setPlayers] = useState([{ name: "Joueur 1", evaluations: [{ date: new Date().toISOString().split('T')[0], stats: {...initialStats} }] }]);
   const [activePlayer, setActivePlayer] = useState(0);
   const [activeCategory, setActiveCategory] = useState("Compétences Techniques");
@@ -294,4 +301,6 @@ const GraphiqueRadarFootball = () => {
   );
 };
 
+console.log('Tentative de rendu du composant');
 ReactDOM.render(<GraphiqueRadarFootball />, document.getElementById('root'));
+console.log('Rendu terminé');
