@@ -12,11 +12,301 @@
 <body>
     <div id="root"></div>
     <script type="text/babel">
-        // Tout le code JavaScript sera ici
         const { useState, useEffect } = React;
         const { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip, Legend } = Recharts;
 
-        // ... (Copiez ici tout le contenu du fichier index.js, à partir de la définition de PLAYER_ATTRIBUTES jusqu'à la fin)
+        const PLAYER_ATTRIBUTES = {
+          "Compétences Techniques": [
+            "Tir - Précision", "Tir - Puissance",
+            "Passe - Précision", "Passe - Vision de jeu", "Passe - Capacité à changer le jeu",
+            "Contrôle de balle - Première touche", "Contrôle de balle - Maîtrise en mouvement", "Contrôle de balle - Sous pression",
+            "Dribble - Vitesse d'exécution", "Dribble - Capacité à éliminer",
+            "Centres", "Jeu de tête", "Coups de pied arrêtés"
+          ],
+          "Compétences Tactiques": [
+            "Positionnement", "Anticipation", "Vision de jeu",
+            "Défense - Tacle", "Défense - Marquage", "Défense - Couverture", "Défense - Pressing",
+            "Transition"
+          ],
+          "Compétences Physiques": [
+            "Vitesse - Accélération", "Vitesse - Vitesse de pointe",
+            "Endurance", "Force", "Agilité", "Puissance"
+          ],
+          "Compétences Mentales": [
+            "Concentration", "Détermination", "Leadership", "Confiance en soi", "Discipline"
+          ]
+        };
+
+        const CATEGORY_COLORS = {
+          "Compétences Techniques": "#ff6384",
+          "Compétences Tactiques": "#36a2eb",
+          "Compétences Physiques": "#ffce56",
+          "Compétences Mentales": "#4bc0c0"
+        };
+
+        const EVALUATION_COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#a4de6c", "#d0ed57"];
+
+        const FLAT_ATTRIBUTES = Object.values(PLAYER_ATTRIBUTES).flat();
+        const initialStats = FLAT_ATTRIBUTES.reduce((acc, attr) => ({ ...acc, [attr]: 50 }), {});
+
+        const GraphiqueRadarFootball = () => {
+          const [players, setPlayers] = useState([{ name: "Joueur 1", evaluations: [{ date: new Date().toISOString().split('T')[0], stats: {...initialStats} }] }]);
+          const [activePlayer, setActivePlayer] = useState(0);
+          const [activeCategory, setActiveCategory] = useState("Compétences Techniques");
+          const [activeEvaluation, setActiveEvaluation] = useState(0);
+          const [profileName, setProfileName] = useState("Footballeur Professionnel");
+
+          const handleStatChange = (attribute, value) => {
+            const newValue = parseInt(value, 10);
+            setPlayers(prevPlayers => {
+              const newPlayers = [...prevPlayers];
+              newPlayers[activePlayer].evaluations[activeEvaluation].stats[attribute] = newValue;
+              return newPlayers;
+            });
+          };
+
+          const addNewEvaluation = () => {
+            setPlayers(prevPlayers => {
+              const newPlayers = [...prevPlayers];
+              const newEvaluation = { 
+                date: new Date().toISOString().split('T')[0], 
+                stats: {...initialStats} 
+              };
+              newPlayers[activePlayer].evaluations.push(newEvaluation);
+              return newPlayers;
+            });
+            setActiveEvaluation(prevActiveEvaluation => prevActiveEvaluation + 1);
+          };
+
+          const deleteEvaluation = () => {
+            if (players[activePlayer].evaluations.length > 1) {
+              setPlayers(prevPlayers => {
+                const newPlayers = [...prevPlayers];
+                newPlayers[activePlayer].evaluations.splice(activeEvaluation, 1);
+                return newPlayers;
+              });
+              setActiveEvaluation(prevActiveEvaluation => Math.max(0, prevActiveEvaluation - 1));
+            } else {
+              alert("Impossible de supprimer la dernière évaluation.");
+            }
+          };
+
+          const addNewPlayer = () => {
+            setPlayers(prevPlayers => [
+              ...prevPlayers, 
+              { name: `Joueur ${prevPlayers.length + 1}`, evaluations: [{ date: new Date().toISOString().split('T')[0], stats: {...initialStats} }] }
+            ]);
+            setActivePlayer(prevActivePlayer => prevActivePlayer + 1);
+            setActiveEvaluation(0);
+          };
+
+          const getRadarData = (category) => {
+            return PLAYER_ATTRIBUTES[category].map(attr => {
+              const data = { attribute: attr };
+              players[activePlayer].evaluations.forEach((eval, index) => {
+                data[`evaluation${index}`] = eval.stats[attr] || 0;
+              });
+              return data;
+            });
+          };
+
+          const getGlobalRadarData = () => {
+            return Object.keys(PLAYER_ATTRIBUTES).map(category => {
+              const data = { attribute: category };
+              players[activePlayer].evaluations.forEach((eval, index) => {
+                data[`evaluation${index}`] = PLAYER_ATTRIBUTES[category].reduce((sum, attr) => sum + (eval.stats[attr] || 0), 0) / PLAYER_ATTRIBUTES[category].length;
+              });
+              return data;
+            });
+          };
+
+          const renderCategoryChart = (category) => (
+            <ResponsiveContainer width="100%" height={400}>
+              <RadarChart data={getRadarData(category)}>
+                <PolarGrid />
+                <PolarAngleAxis dataKey="attribute" />
+                <PolarRadiusAxis angle={30} domain={[0, 100]} />
+                {players[activePlayer].evaluations.map((_, index) => (
+                  <Radar 
+                    key={index}
+                    name={`Évaluation ${index + 1}`} 
+                    dataKey={`evaluation${index}`} 
+                    stroke={EVALUATION_COLORS[index % EVALUATION_COLORS.length]} 
+                    fill={EVALUATION_COLORS[index % EVALUATION_COLORS.length]} 
+                    fillOpacity={0.6} 
+                  />
+                ))}
+                <Tooltip />
+                <Legend />
+              </RadarChart>
+            </ResponsiveContainer>
+          );
+
+          const handlePrint = () => {
+            window.print();
+          };
+
+          const saveData = () => {
+            localStorage.setItem('footballPlayerData', JSON.stringify({ players, profileName }));
+            alert("Données sauvegardées avec succès !");
+          };
+
+          const loadData = () => {
+            const savedData = localStorage.getItem('footballPlayerData');
+            if (savedData) {
+              const { players: savedPlayers, profileName: savedProfileName } = JSON.parse(savedData);
+              setPlayers(savedPlayers);
+              setProfileName(savedProfileName);
+              setActivePlayer(0);
+              setActiveEvaluation(0);
+              alert("Données chargées avec succès !");
+            } else {
+              alert("Aucune donnée sauvegardée trouvée.");
+            }
+          };
+
+          useEffect(() => {
+            loadData();
+          }, []);
+
+          const buttonStyle = {
+            padding: '10px 20px',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            color: 'white',
+            backgroundColor: '#007bff',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            transition: 'background-color 0.3s',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+          };
+
+          return (
+            <div style={{ fontFamily: 'Arial, sans-serif', maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <h2 style={{ marginRight: '10px' }}>Profil</h2>
+                <input 
+                  type="text" 
+                  value={profileName} 
+                  onChange={(e) => setProfileName(e.target.value)}
+                  style={{ fontSize: '20px', padding: '5px', borderRadius: '5px', border: '1px solid #ccc' }}
+                />
+              </div>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+                <div>
+                  <select 
+                    value={activePlayer} 
+                    onChange={(e) => {
+                      setActivePlayer(Number(e.target.value));
+                      setActiveEvaluation(0);
+                    }}
+                    style={{ marginRight: '10px', padding: '5px' }}
+                  >
+                    {players.map((player, index) => (
+                      <option key={index} value={index}>{player.name}</option>
+                    ))}
+                  </select>
+                  <button onClick={addNewPlayer} style={{ padding: '5px 10px' }}>Ajouter un joueur</button>
+                </div>
+                <div>
+                  <select 
+                    value={activeEvaluation} 
+                    onChange={(e) => setActiveEvaluation(Number(e.target.value))}
+                    style={{ marginRight: '10px', padding: '5px' }}
+                  >
+                    {players[activePlayer].evaluations.map((_, index) => (
+                      <option key={index} value={index}>Évaluation {index + 1}</option>
+                    ))}
+                  </select>
+                  <button onClick={addNewEvaluation} style={{ padding: '5px 10px', marginRight: '5px' }}>Ajouter une évaluation</button>
+                  <button onClick={deleteEvaluation} style={{ padding: '5px 10px' }}>Supprimer l'évaluation</button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', marginBottom: '20px' }}>
+                {Object.keys(PLAYER_ATTRIBUTES).map(category => (
+                  <button
+                    key={category}
+                    onClick={() => setActiveCategory(category)}
+                    style={{
+                      padding: '10px',
+                      margin: '0 5px',
+                      backgroundColor: activeCategory === category ? CATEGORY_COLORS[category] : '#f8f9fa',
+                      color: activeCategory === category ? 'white' : 'black',
+                      border: 'none',
+                      borderRadius: '5px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                <div style={{ flex: '1 1 400px', marginRight: '20px', maxHeight: '600px', overflowY: 'auto' }}>
+                  {PLAYER_ATTRIBUTES[activeCategory].map(attribute => (
+                    <div key={attribute} style={{ marginBottom: '10px' }}>
+                      <label htmlFor={attribute} style={{ display: 'block', marginBottom: '5px' }}>{attribute}</label>
+                      <input
+                        id={attribute}
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={players[activePlayer].evaluations[activeEvaluation]?.stats[attribute] || 0}
+                        onChange={(e) => handleStatChange(attribute, e.target.value)}
+                        style={{ width: '100%' }}
+                      />
+                      <span>{players[activePlayer].evaluations[activeEvaluation]?.stats[attribute] || 0}</span>
+                    </div>
+                  ))}
+                </div>
+                
+                <div style={{ flex: '1 1 600px' }}>
+                  {renderCategoryChart(activeCategory)}
+                </div>
+              </div>
+
+              <h3 style={{ textAlign: 'center', marginTop: '40px', marginBottom: '20px' }}>Vue d'ensemble des compétences</h3>
+              <div style={{ width: '100%', height: '500px' }}>
+                <ResponsiveContainer>
+                  <RadarChart data={getGlobalRadarData()}>
+                    <PolarGrid />
+                    <PolarAngleAxis dataKey="attribute" />
+                    <PolarRadiusAxis angle={30} domain={[0, 100]} />
+                    {players[activePlayer].evaluations.map((_, index) => (
+                      <Radar 
+                        key={index}
+                        name={`Évaluation ${index + 1}`} 
+                        dataKey={`evaluation${index}`} 
+                        stroke={EVALUATION_COLORS[index % EVALUATION_COLORS.length]} 
+                        fill={EVALUATION_COLORS[index % EVALUATION_COLORS.length]} 
+                        fillOpacity={0.6} 
+                      />
+                    ))}
+                    <Tooltip />
+                    <Legend />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div style={{ marginTop: '20px' }}>
+                <textarea
+                  placeholder="Commentaires généraux sur le joueur..."
+                  style={{ width: '100%', height: '100px', padding: '10px' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
+                <button onClick={saveData} style={buttonStyle}>Sauvegarder les données</button>
+                <button onClick={loadData} style={buttonStyle}>Restaurer les données sauvegardées</button>
+                <button onClick={handlePrint} style={buttonStyle}>Imprimer</button>
+              </div>
+            </div>
+          );
+        };
 
         ReactDOM.render(<GraphiqueRadarFootball />, document.getElementById('root'));
     </script>
